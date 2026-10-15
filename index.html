@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pisto-Lon-E</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+:root{
+  --bg:#eef2f6;--pn:#ffffff;--ink:#0f1b2a;--mut:#5d6f82;--ln:#d3dce6;
+  --ac:#0a7ea4;--ok:#0b8f63;--bad:#d03550;--cd:#f2f6fa;--s1:#e3edf6;--s2:#b9c9da;
+  --noble:#7c3aed;--halo:#d97706;--diat:#0284c7;--comp:#059669;
+  color-scheme:light;
+}
+@media(prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#07111f;--pn:#0d1b2d;--ink:#eaf3fc;--mut:#8ea3b9;--ln:#22364d;
+    --ac:#53d7ff;--ok:#4cffb0;--bad:#ff647c;--cd:#12243a;--s1:#173452;--s2:#07111f;
+    --noble:#a78bfa;--halo:#fbbf24;--diat:#38bdf8;--comp:#34d399;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#07111f;--pn:#0d1b2d;--ink:#eaf3fc;--mut:#8ea3b9;--ln:#22364d;
+  --ac:#53d7ff;--ok:#4cffb0;--bad:#ff647c;--cd:#12243a;--s1:#173452;--s2:#07111f;
+  --noble:#a78bfa;--halo:#fbbf24;--diat:#38bdf8;--comp:#34d399;
+  color-scheme:dark;
+}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font:14px/1.4 "IBM Plex Sans",system-ui,-apple-system,sans-serif}
+.app{height:100%;display:grid;grid-template-columns:minmax(0,1fr) 400px}
+.stage{position:relative;overflow:hidden;background:radial-gradient(circle at 50% 25%,var(--s1),var(--s2) 78%)}
+#gl{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab;display:block}
+.hud{position:absolute;pointer-events:none}
+.tl{top:18px;left:22px}.tl h1{margin:0;font-size:20px;font-weight:600}.tl p{margin:4px 0 0;color:var(--mut);font-size:12px;max-width:340px}
+.views{position:absolute;top:16px;right:16px;display:flex;gap:6px}
+button,select,input{font:inherit;color:var(--ink)}
+button{border:1px solid var(--ln);background:var(--pn);border-radius:8px;padding:7px 11px;cursor:pointer;transition:all .15s ease}
+button:hover{border-color:var(--ac)}button.on{background:var(--ac);color:#04121c;border-color:var(--ac);font-weight:600}
+.chip{left:22px;bottom:18px;padding:6px 12px;border-radius:99px;background:var(--pn);border:1px solid var(--ln);font:500 12px "IBM Plex Mono",monospace;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.panel{background:var(--pn);border-left:1px solid var(--ln);padding:18px 20px 32px;overflow-y:auto}
+.panel h3{margin:18px 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut)}
+.ctl{margin-bottom:11px}.ctl label{display:block;font-size:12px;color:var(--mut);margin-bottom:4px}
+.row{display:grid;grid-template-columns:1fr 88px;gap:6px}
+.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+input,select{width:100%;background:var(--cd);border:1px solid var(--ln);border-radius:8px;padding:7px 9px}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--ac)}
+.ro{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.card{background:var(--cd);border-radius:9px;padding:8px 10px}.card small{color:var(--mut);display:block;font-size:11px}.card b{font:500 14px "IBM Plex Mono",monospace}.card i{font-style:normal;color:var(--mut);font-size:11px;margin-left:5px}
+#ch{width:100%;height:180px;background:var(--cd);border-radius:10px;display:block}
+.note{font-size:12px;color:var(--mut);line-height:1.55;margin-top:14px}
+
+/* Periodic Table Styles */
+.pt-sec-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.pt-sec-header span{font-size:12px;font-weight:600}
+.full-pt-btn{font-size:11px;padding:4px 8px;border-radius:6px;background:var(--cd)}
+.ptable{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-bottom:6px}
+.pc{aspect-ratio:1;padding:2px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:6px;background:var(--cd);border:1px solid var(--ln);cursor:pointer;color:var(--ink);position:relative;transition:all .12s}
+.pc .z{position:absolute;top:2px;left:3px;font:500 8px "IBM Plex Mono",monospace;color:var(--mut)}
+.pc b{font:600 13px/1 "IBM Plex Mono",monospace;margin-top:4px}
+.pc small{font:400 8px/1 "IBM Plex Sans",sans-serif;color:var(--mut);margin-top:2px}
+.pc:hover{border-color:var(--ac);transform:translateY(-1px)}
+.pc.on{background:var(--ac);color:#04121c;border-color:var(--ac)}
+.pc.on .z,.pc.on small{color:#04121c;opacity:.85}
+.pc.empty{background:transparent;border-color:transparent;pointer-events:none}
+.pc.noble{border-bottom:2px solid var(--noble)}
+.pc.halogen{border-bottom:2px solid var(--halo)}
+.pc.nonmetal{border-bottom:2px solid var(--diat)}
+
+/* Compounds & Mixtures Grid */
+.comp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:10px}
+.comp-btn{padding:6px 4px;font-size:11px;font-weight:500;text-align:center;background:var(--cd);border:1px solid var(--ln);border-radius:6px;cursor:pointer}
+.comp-btn:hover{border-color:var(--ac)}
+.comp-btn.on{background:var(--ac);color:#04121c;border-color:var(--ac);font-weight:600}
+
+/* Gas Info Card */
+.gas-card{background:var(--cd);border:1px solid var(--ln);border-radius:8px;padding:9px 12px;margin-bottom:12px;font-size:12px}
+.gas-card-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+.gas-card-title{font-weight:600;font-size:13px}
+.gas-card-badge{font-size:10px;padding:2px 6px;border-radius:4px;background:var(--pn);color:var(--mut);border:1px solid var(--ln)}
+.gas-card-props{display:grid;grid-template-columns:1fr 1fr;gap:4px;color:var(--mut);font-family:"IBM Plex Mono",monospace;font-size:11px}
+
+/* Full Periodic Table Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal-box{background:var(--pn);border:1px solid var(--ln);border-radius:12px;max-width:980px;width:100%;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 16px 40px rgba(0,0,0,.25);overflow:hidden}
+.modal-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--ln)}
+.modal-head h2{margin:0;font-size:16px}
+.modal-body{padding:14px 18px;overflow-x:auto;overflow-y:auto}
+.pt-118-grid{display:grid;grid-template-columns:repeat(18,minmax(38px,1fr));gap:3px;margin-bottom:12px}
+.elem-tile{aspect-ratio:1;border:1px solid var(--ln);background:var(--cd);border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;font-family:"IBM Plex Mono",monospace}
+.elem-tile .ez{font-size:7px;position:absolute;top:1px;left:2px;color:var(--mut)}
+.elem-tile .es{font-size:11px;font-weight:600}
+.elem-tile.is-gas{background:rgba(10,126,164,.15);border-color:var(--ac)}
+.elem-tile.is-gas:hover{background:var(--ac);color:#04121c}
+.elem-tile.is-gas.active-gas{background:var(--ac);color:#04121c;box-shadow:0 0 0 2px var(--ink)}
+.elem-tile.not-gas{opacity:.55}
+.elem-tile.not-gas:hover{opacity:.95;border-color:var(--mut)}
+.modal-info{padding:10px 14px;background:var(--cd);border-radius:8px;font-size:12px;display:flex;justify-content:space-between;align-items:center}
+.modal-legend{display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:var(--mut);margin-bottom:10px}
+.legend-dot{display:inline-block;width:9px;height:9px;border-radius:2px;vertical-align:middle;margin-right:4px}
+
+@media(max-width:960px){
+  .app{height:auto;grid-template-columns:1fr}
+  .stage{height:58svh}
+  .panel{border-left:0;border-top:1px solid var(--ln)}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<main class="stage" id="stage">
+  <canvas id="gl"></canvas>
+  <div class="hud tl">
+    <h1>Pisto-Lon-E</h1>
+    <p>Drag piston to compress/expand. Drag background to orbit camera, scroll to zoom.</p>
+  </div>
+  <div class="views">
+    <button data-v="side">Side</button>
+    <button data-v="iso" class="on">3D</button>
+    <button data-v="top">Top</button>
+  </div>
+  <div class="hud chip" id="chip">Starting…</div>
+</main>
+
+<aside class="panel">
+  <div class="row" style="grid-template-columns:1fr auto;margin-bottom:12px">
+    <select id="pre"></select>
+    <button id="rst">Reset piston</button>
+  </div>
+
+  <div class="pt-sec-header">
+    <span>Elemental gases (Periodic table)</span>
+    <button class="full-pt-btn" id="open-full-pt">⊞ Full 118 Elements</button>
+  </div>
+  <div class="ptable" id="ptable"></div>
+
+  <div class="pt-sec-header" style="margin-top:10px">
+    <span>Compounds & Mixtures</span>
+  </div>
+  <div class="comp-grid" id="comp-grid"></div>
+
+  <div class="gas-card" id="gas-card"></div>
+
+  <div class="ctl">
+    <label>Equation of state</label>
+    <select id="model">
+      <option value="vdw">Real gas (van der Waals)</option>
+      <option value="ideal">Ideal gas (P·V = n·R·T)</option>
+    </select>
+  </div>
+  <div class="ctl">
+    <label>Thermal process</label>
+    <select id="proc">
+      <option value="iso">Isothermal (fast heat bath)</option>
+      <option value="slow">Partial heat exchange (τ = 0.3 s)</option>
+      <option value="adi">Adiabatic (insulated chamber)</option>
+    </select>
+  </div>
+
+  <h3>Setup parameters</h3>
+  <div id="ctl"></div>
+
+  <div class="ctl">
+    <label>Added weights on piston: <span id="wl">none</span></label>
+    <div class="row3">
+      <button data-w="100">+100 g</button>
+      <button data-w="500">+500 g</button>
+      <button data-w="0">Remove top</button>
+    </div>
+  </div>
+
+  <h3>Dynamics</h3>
+  <div class="ctl">
+    <label>Friction (damping ratio ζ)</label>
+    <input id="zeta" type="range" min="0" max="1" step="0.01" value="0.03">
+  </div>
+  <div class="ctl">
+    <label>Simulation time scale</label>
+    <select id="ts">
+      <option value="1">1× real time</option>
+      <option value="0.25">0.25×</option>
+      <option value="0.1" selected>0.1×</option>
+      <option value="0.02">0.02×</option>
+    </select>
+  </div>
+
+  <h3>Measurements</h3>
+  <div class="ro" id="ro"></div>
+
+  <h3>Pressure–Volume diagram</h3>
+  <canvas id="ch"></canvas>
+  <p class="note">Dynamic equation: <i>m·ḧ = (P<sub>gas</sub> − P<sub>ext</sub>)·A − m·g − c·ḣ</i>. Isothermal equilibrium rests where the dashed green load line intersects the blue curve.</p>
+</aside>
+</div>
+
+<!-- Modal for full 118-element periodic table -->
+<div class="modal-overlay" id="pt-modal" style="display:none">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2>Interactive Periodic Table of the Elements</h2>
+      <button id="close-modal" style="padding:4px 10px;font-size:16px">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-legend">
+        <span><span class="legend-dot" style="background:var(--ac)"></span> Gaseous at STP (Click to simulate)</span>
+        <span><span class="legend-dot" style="background:var(--cd);border:1px solid var(--ln)"></span> Solid / Liquid at STP</span>
+      </div>
+      <div class="pt-118-grid" id="full-pt-grid"></div>
+      <div class="modal-info" id="full-pt-info">Click any highlighted gaseous element to load into the simulation chamber.</div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(()=>{
+if(!window.THREE){
+  document.body.insertAdjacentHTML('afterbegin','<p style="padding:24px">Three.js 3D engine failed to load. Please check your network and refresh.</p>');
+  return;
+}
+
+const $=id=>document.getElementById(id);
+const cl=(x,a,b)=>x<a?a:(x>b?b:x);
+const R=8.314462618, G=9.80665, NP=150, TRAIL_MAX=600, ISO_N=91;
+
+/* ───── Gas library ───── */
+const GAS={
+  H2 :{name:'Hydrogen', formula:'H₂', Z:1, type:'diatomic', a:0.0247, b:2.65e-5, cv:2.5, M:0.002016, desc:'Lightest diatomic gas'},
+  He :{name:'Helium', formula:'He', Z:2, type:'noble', a:0.00346, b:2.38e-5, cv:1.5, M:0.004003, desc:'Monatomic noble gas, closest to ideal'},
+  N2 :{name:'Nitrogen', formula:'N₂', Z:7, type:'diatomic', a:0.1370, b:3.87e-5, cv:2.5, M:0.028013, desc:'Primary constituent of Earth atmosphere'},
+  O2 :{name:'Oxygen', formula:'O₂', Z:8, type:'diatomic', a:0.1382, b:3.19e-5, cv:2.5, M:0.031999, desc:'Essential diatomic oxidizer gas'},
+  F2 :{name:'Fluorine', formula:'F₂', Z:9, type:'halogen', a:0.1171, b:2.90e-5, cv:2.5, M:0.037997, desc:'Highly reactive halogen gas'},
+  Ne :{name:'Neon', formula:'Ne', Z:10, type:'noble', a:0.0213, b:1.71e-5, cv:1.5, M:0.020180, desc:'Inert monatomic noble gas'},
+  Cl2:{name:'Chlorine', formula:'Cl₂', Z:17, type:'halogen', a:0.6579, b:5.62e-5, cv:2.5, M:0.070906, desc:'Dense yellowish-green halogen gas'},
+  Ar :{name:'Argon', formula:'Ar', Z:18, type:'noble', a:0.1355, b:3.20e-5, cv:1.5, M:0.039948, desc:'Abundant atmospheric noble gas'},
+  Kr :{name:'Krypton', formula:'Kr', Z:36, type:'noble', a:0.2349, b:3.98e-5, cv:1.5, M:0.083798, desc:'Dense noble gas'},
+  Xe :{name:'Xenon', formula:'Xe', Z:54, type:'noble', a:0.4250, b:5.10e-5, cv:1.5, M:0.131293, desc:'Heavy noble gas with strong dispersion forces'},
+  Rn :{name:'Radon', formula:'Rn', Z:86, type:'noble', a:0.6600, b:6.24e-5, cv:1.5, M:0.222000, desc:'Dense radioactive noble gas'},
+  
+  air:{name:'Air (Dry mixture)', formula:'Air', type:'mix', a:0.1358, b:3.64e-5, cv:2.5, M:0.028970, desc:'78% N₂, 21% O₂, 1% Ar/CO₂'},
+  CO2:{name:'Carbon dioxide', formula:'CO₂', type:'compound', a:0.3640, b:4.267e-5, cv:3.43, M:0.044010, desc:'Linear triatomic greenhouse gas'},
+  CH4:{name:'Methane', formula:'CH₄', type:'compound', a:0.2283, b:4.278e-5, cv:3.26, M:0.016043, desc:'Tetrahedral light hydrocarbon gas'},
+  NH3:{name:'Ammonia', formula:'NH₃', type:'compound', a:0.4225, b:3.707e-5, cv:3.35, M:0.017031, desc:'Polar pyramidal gas with hydrogen bonding'},
+  CO :{name:'Carbon monoxide', formula:'CO', type:'compound', a:0.1505, b:3.985e-5, cv:2.5, M:0.028010, desc:'Diatomic gas isoelectronic with N₂'},
+  SO2:{name:'Sulfur dioxide', formula:'SO₂', type:'compound', a:0.6803, b:5.636e-5, cv:3.78, M:0.064066, desc:'Bent triatomic gas with large dipole moment'}
+};
+
+/* Periodic table layout: [symbol, row, col, gasKey, formula, Z, class] */
+const PT_ELEM_GRID=[
+  ['H',  1, 1, 'H2',  'H₂', 1,  'nonmetal'],
+  ['He', 1, 6, 'He',  'He', 2,  'noble'],
+  ['N',  2, 3, 'N2',  'N₂', 7,  'nonmetal'],
+  ['O',  2, 4, 'O2',  'O₂', 8,  'nonmetal'],
+  ['F',  2, 5, 'F2',  'F₂', 9,  'halogen'],
+  ['Ne', 2, 6, 'Ne',  'Ne', 10, 'noble'],
+  ['Cl', 3, 5, 'Cl2', 'Cl₂',17, 'halogen'],
+  ['Ar', 3, 6, 'Ar',  'Ar', 18, 'noble'],
+  ['Kr', 4, 6, 'Kr',  'Kr', 36, 'noble'],
+  ['Xe', 5, 6, 'Xe',  'Xe', 54, 'noble'],
+  ['Rn', 6, 6, 'Rn',  'Rn', 86, 'noble']
+];
+
+const COMP_ITEMS=[
+  ['air', 'Air'],
+  ['CO2', 'CO₂'],
+  ['CH4', 'CH₄'],
+  ['NH3', 'NH₃'],
+  ['CO',  'CO'],
+  ['SO2', 'SO₂']
+];
+
+const U={
+  T:[['°C',1,273.15],['K',1,0],['°F',5/9,255.372]],
+  n:[['mmol',1e-3],['mol',1]],
+  A:[['cm²',1e-4],['mm²',1e-6],['m²',1]],
+  L:[['cm',.01],['mm',.001]],
+  m:[['g',1e-3],['kg',1]],
+  P:[['mmHg',133.322],['atm',101325],['kPa',1e3],['bar',1e5],['Pa',1],['psi',6894.76]]
+};
+
+const C=[
+  ['T','Bath temperature',37],
+  ['n','Gas amount',1],
+  ['A','Piston area',10],
+  ['L','Cylinder length',15],
+  ['m','Piston mass',200],
+  ['P','External pressure',760]
+];
+
+const PRE=[
+  ['Default: 37 °C, 1 mmol of air',{T:37,n:1,A:10,L:15,m:200,P:760,w:[100],gas:'air',proc:'iso',z:.03,h0:1.6}],
+  ["Boyle's law: slow isothermal load",{T:20,n:2,A:10,L:20,m:200,P:760,w:[500,500,500],gas:'air',proc:'iso',z:.3,h0:1}],
+  ['Adiabatic bounce: insulated, low friction',{T:20,n:2,A:10,L:15,m:200,P:760,w:[100],gas:'air',proc:'adi',z:.01,h0:.35}],
+  ['Real gas: CO₂ under heavy 20 kg load',{T:20,n:3,A:10,L:30,m:20000,P:760,w:[],gas:'CO2',proc:'iso',z:.1,h0:1.5}],
+  ['Helium vs Xenon: atomic mass contrast',{T:25,n:1.5,A:10,L:18,m:300,P:760,w:[100],gas:'He',proc:'slow',z:.05,h0:1.4}]
+];
+
+const PROC_TAU={iso:2e-4, slow:.3, adi:1e12};
+
+/* ───── State ───── */
+let S={}, W=[100], h=.03, v=0, T=310.15, hT=.03, held=false, grab=0;
+let gasKey='air';
+let az=.7, el=1.22, taz=.7, tel=1.22, zoom=1, rigKey='', pg, gm, pa, pv;
+const prev={};
+const trailX=new Float32Array(TRAIL_MAX), trailY=new Float32Array(TRAIL_MAX);
+let trailN=0, trailI=0;
+let eqH=0, eqMsg='';
+let camD=40, camY=8;
+
+/* ───── Build parameter controls ───── */
+C.forEach(([k,l,val])=>{
+  prev[k]=0;
+  const d=document.createElement('div');
+  d.className='ctl';
+  d.innerHTML=`<label>${l}</label><div class="row"><input id="${k}" type="number" value="${val}" step="any"><select id="${k}U">${U[k].map((x,i)=>`<option value="${i}">${x[0]}</option>`).join('')}</select></div>`;
+  $('ctl').append(d);
+});
+PRE.forEach((p,i)=>$('pre').add(new Option(p[0],i)));
+
+function si(k,def){
+  const el=$(k);
+  if(!el)return def;
+  const raw=parseFloat(el.value);
+  const u=U[k][+$(k+'U').value]||U[k][0];
+  if(!Number.isFinite(raw))return def;
+  const out=raw*u[1]+(u[2]||0);
+  return Number.isFinite(out)?out:def;
+}
+
+/* ───── Build Periodic Table UI ───── */
+(function buildPeriodicTableUI(){
+  const grid=$('ptable');
+  for(let r=1;r<=6;r++){
+    for(let c=1;c<=6;c++){
+      const item=PT_ELEM_GRID.find(e=>e[1]===r&&e[2]===c);
+      if(item){
+        const b=document.createElement('button');
+        b.className=`pc ${item[6]}`;
+        b.dataset.gas=item[3];
+        b.title=`${GAS[item[3]].name} (${item[4]})`;
+        b.innerHTML=`<span class="z">${item[5]}</span><b>${item[0]}</b><small>${item[4]}</small>`;
+        grid.appendChild(b);
+      }else{
+        const d=document.createElement('div');
+        d.className='pc empty';
+        grid.appendChild(d);
+      }
+    }
+  }
+
+  const compGrid=$('comp-grid');
+  COMP_ITEMS.forEach(([k, label])=>{
+    const b=document.createElement('button');
+    b.className='comp-btn';
+    b.dataset.gas=k;
+    b.textContent=label;
+    compGrid.appendChild(b);
+  });
+})();
+
+function updateGasCard(){
+  const g=GAS[gasKey]||GAS.air;
+  const gamma=((g.cv+1)/g.cv).toFixed(2);
+  $('gas-card').innerHTML=`
+    <div class="gas-card-top">
+      <span class="gas-card-title">${g.name} (${g.formula})</span>
+      <span class="gas-card-badge">${g.type.toUpperCase()}</span>
+    </div>
+    <div style="color:var(--mut);font-size:11px;margin-bottom:6px">${g.desc}</div>
+    <div class="gas-card-props">
+      <span>M: ${(g.M*1000).toFixed(2)} g/mol</span>
+      <span>γ = Cp/Cv: ${gamma}</span>
+      <span>a: ${g.a.toFixed(4)} J·m³/mol²</span>
+      <span>b: ${(g.b*1e5).toFixed(2)}×10⁻⁵ m³/mol</span>
+    </div>
+  `;
+}
+
+function updateGasUI(){
+  document.querySelectorAll('.pc[data-gas],.comp-btn[data-gas]').forEach(b=>{
+    b.classList.toggle('on', b.dataset.gas===gasKey);
+  });
+  updateGasCard();
+}
+
+function setGasDirect(k){
+  if(!GAS[k])return;
+  gasKey=k;
+  updateGasUI();
+}
+
+function setGasAndReset(k){
+  setGasDirect(k);
+  read();
+  heq();
+  h=cl(eqH,S.hmin,S.hmax);
+  v=0;T=S.Tb;
+  trailN=0;trailI=0;
+}
+
+document.querySelectorAll('.pc[data-gas],.comp-btn[data-gas]').forEach(b=>{
+  b.addEventListener('click',()=>setGasAndReset(b.dataset.gas));
+});
+
+/* ───── Full 118 Elements Modal ───── */
+const PT_118_DATA=[
+  [1,"H","Hydrogen",1,1,"gas","H2"],[2,"He","Helium",1,18,"gas","He"],
+  [3,"Li","Lithium",2,1,"solid"],[4,"Be","Beryllium",2,2,"solid"],[5,"B","Boron",2,13,"solid"],[6,"C","Carbon",2,14,"solid"],[7,"N","Nitrogen",2,15,"gas","N2"],[8,"O","Oxygen",2,16,"gas","O2"],[9,"F","Fluorine",2,17,"gas","F2"],[10,"Ne","Neon",2,18,"gas","Ne"],
+  [11,"Na","Sodium",3,1,"solid"],[12,"Mg","Magnesium",3,2,"solid"],[13,"Al","Aluminium",3,13,"solid"],[14,"Si","Silicon",3,14,"solid"],[15,"P","Phosphorus",3,15,"solid"],[16,"S","Sulfur",3,16,"solid"],[17,"Cl","Chlorine",3,17,"gas","Cl2"],[18,"Ar","Argon",3,18,"gas","Ar"],
+  [19,"K","Potassium",4,1,"solid"],[20,"Ca","Calcium",4,2,"solid"],[21,"Sc","Scandium",4,3,"solid"],[22,"Ti","Titanium",4,4,"solid"],[23,"V","Vanadium",4,5,"solid"],[24,"Cr","Chromium",4,6,"solid"],[25,"Mn","Manganese",4,7,"solid"],[26,"Fe","Iron",4,8,"solid"],[27,"Co","Cobalt",4,9,"solid"],[28,"Ni","Nickel",4,10,"solid"],[29,"Cu","Copper",4,11,"solid"],[30,"Zn","Zinc",4,12,"solid"],[31,"Ga","Gallium",4,13,"solid"],[32,"Ge","Germanium",4,14,"solid"],[33,"As","Arsenic",4,15,"solid"],[34,"Se","Selenium",4,16,"solid"],[35,"Br","Bromine",4,17,"liquid"],[36,"Kr","Krypton",4,18,"gas","Kr"],
+  [37,"Rb","Rubidium",5,1,"solid"],[38,"Sr","Strontium",5,2,"solid"],[39,"Y","Yttrium",5,3,"solid"],[40,"Zr","Zirconium",5,4,"solid"],[41,"Nb","Niobium",5,5,"solid"],[42,"Mo","Molybdenum",5,6,"solid"],[43,"Tc","Technetium",5,7,"solid"],[44,"Ru","Ruthenium",5,8,"solid"],[45,"Rh","Rhodium",5,9,"solid"],[46,"Pd","Palladium",5,10,"solid"],[47,"Ag","Silver",5,11,"solid"],[48,"Cd","Cadmium",5,12,"solid"],[49,"In","Indium",5,13,"solid"],[50,"Sn","Tin",5,14,"solid"],[51,"Sb","Antimony",5,15,"solid"],[52,"Te","Tellurium",5,16,"solid"],[53,"I","Iodine",5,17,"solid"],[54,"Xe","Xenon",5,18,"gas","Xe"],
+  [55,"Cs","Caesium",6,1,"solid"],[56,"Ba","Barium",6,2,"solid"],[72,"Hf","Hafnium",6,4,"solid"],[73,"Ta","Tantalum",6,5,"solid"],[74,"W","Tungsten",6,6,"solid"],[75,"Re","Rhenium",6,7,"solid"],[76,"Os","Osmium",6,8,"solid"],[77,"Ir","Iridium",6,9,"solid"],[78,"Pt","Platinum",6,10,"solid"],[79,"Au","Gold",6,11,"solid"],[80,"Hg","Mercury",6,12,"liquid"],[81,"Tl","Thallium",6,13,"solid"],[82,"Pb","Lead",6,14,"solid"],[83,"Bi","Bismuth",6,15,"solid"],[84,"Po","Polonium",6,16,"solid"],[85,"At","Astatine",6,17,"solid"],[86,"Rn","Radon",6,18,"gas","Rn"],
+  [87,"Fr","Francium",7,1,"solid"],[88,"Ra","Radium",7,2,"solid"],[104,"Rf","Rutherfordium",7,4,"solid"],[105,"Db","Dubnium",7,5,"solid"],[106,"Sg","Seaborgium",7,6,"solid"],[107,"Bh","Bohrium",7,7,"solid"],[108,"Hs","Hassium",7,8,"solid"],[109,"Mt","Meitnerium",7,9,"solid"],[110,"Ds","Darmstadtium",7,10,"solid"],[111,"Rg","Roentgenium",7,11,"solid"],[112,"Cn","Copernicium",7,12,"solid"],[113,"Nh","Nihonium",7,13,"solid"],[114,"Fl","Flerovium",7,14,"solid"],[115,"Mc","Moscovium",7,15,"solid"],[116,"Lv","Livermorium",7,16,"solid"],[117,"Ts","Tennessine",7,17,"solid"],[118,"Og","Oganesson",7,18,"solid"]
+];
+
+(function buildFullPTModal(){
+  const container=$('full-pt-grid');
+  const info=$('full-pt-info');
+  for(let r=1;r<=7;r++){
+    for(let c=1;c<=18;c++){
+      const el=PT_118_DATA.find(e=>e[3]===r&&e[4]===c);
+      if(el){
+        const d=document.createElement('div');
+        const isGas=el[5]==='gas';
+        d.className=`elem-tile ${isGas?'is-gas':'not-gas'}`;
+        d.innerHTML=`<span class="ez">${el[0]}</span><span class="es">${el[1]}</span>`;
+        d.onmouseenter=()=>{
+          info.textContent=`[${el[0]}] ${el[2]} (${el[1]}) — State at STP: ${el[5].toUpperCase()}${isGas?' (Click to simulate gas)':' (Solid/Liquid at room conditions)'}`;
+        };
+        d.onclick=()=>{
+          if(isGas && el[6]){
+            setGasAndReset(el[6]);
+            $('pt-modal').style.display='none';
+          }else{
+            info.textContent=`${el[2]} is ${el[5]} at standard conditions. The piston lab models gases (H₂, He, N₂, O₂, F₂, Ne, Cl₂, Ar, Kr, Xe, Rn).`;
+          }
+        };
+        container.appendChild(d);
+      }else{
+        const empty=document.createElement('div');
+        empty.style.aspectRatio='1';
+        container.appendChild(empty);
+      }
+    }
+  }
+})();
+
+$('open-full-pt').onclick=()=>{$('pt-modal').style.display='flex';};$('close-modal').onclick=()=>{$('pt-modal').style.display='none';};$('pt-modal').onclick=e=>{if(e.target===$('pt-modal'))$('pt-modal').style.display='none';};
+
+/* ───── Three.js Scene Setup ───── */
+const cv=$('gl');
+const ren=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true,powerPreference:'high-performance'});
+const dprCap=Math.min(window.devicePixelRatio||1,2);
+let curDpr=dprCap;
+ren.setPixelRatio(curDpr);
+
+const scene=new THREE.Scene();
+const cam=new THREE.PerspectiveCamera(32,1,.1,900);
+const rig=new THREE.Group();
+const tg=new THREE.Vector3();
+const rc=new THREE.Raycaster();
+
+scene.add(new THREE.HemisphereLight(0xe2f5ff,0x334455,.95));
+const dl=new THREE.DirectionalLight(0xffffff,.9);dl.position.set(40,80,60);scene.add(dl);
+const bl=new THREE.DirectionalLight(0x88ccff,.4);bl.position.set(-50,30,-40);scene.add(bl);
+const grid=new THREE.GridHelper(120,40,0x6f8aa3,0x6f8aa3);
+grid.position.y=-1.6;grid.material.transparent=true;grid.material.opacity=.22;
+scene.add(grid,rig);
+
+const ph=(c,o)=>new THREE.MeshPhongMaterial(Object.assign({color:c,shininess:80,specular:0x99aabb},o));
+const mGlass=ph(0x9fe4ff,{transparent:true,opacity:.13,side:THREE.DoubleSide,depthWrite:false,shininess:150,specular:0xffffff});
+const mSteel=ph(0xaab7c2,{shininess:110,specular:0xffffff});
+const mBase=ph(0x2c3a49,{shininess:40});
+const mRub=ph(0x15191e,{shininess:10,specular:0x222222});
+const mW=ph(0x5d6b78,{shininess:60});
+const mGas=new THREE.MeshBasicMaterial({color:0x53d7ff,transparent:true,opacity:.2,depthWrite:false});
+
+const sc=document.createElement('canvas');sc.width=sc.height=32;
+{const g=sc.getContext('2d'),r=g.createRadialGradient(16,16,0,16,16,16);r.addColorStop(0,'#fff');r.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=r;g.fillRect(0,0,32,32)}
+const mPt=new THREE.PointsMaterial({color:0x7fe9ff,size:.55,map:new THREE.CanvasTexture(sc),transparent:true,depthWrite:false});
+
+function build(){
+  rigKey=S.A+'|'+S.L+'|'+W.length;
+  while(rig.children.length>0){
+    const o=rig.children[0];
+    o.traverse(m=>{if(m.geometry)m.geometry.dispose();});
+    rig.remove(o);
+  }
+  const r=S.r, L=S.L*100;
+  const M=(g,m,y)=>{const o=new THREE.Mesh(g,m);o.position.y=y||0;return o};
+  const ring=(y,rad,t,m)=>{const o=M(new THREE.TorusGeometry(rad,t,10,56),m,y);o.rotation.x=Math.PI/2;return o};
+
+  rig.add(M(new THREE.CylinderGeometry(r*1.5,r*1.7,1.6,56),mBase,-.8),ring(.05,r*1.08,.2,mSteel),ring(L,r*1.07,.14,mSteel));
+  const gl=M(new THREE.CylinderGeometry(r*1.06,r*1.06,L,56,1,true),mGlass,L/2);gl.renderOrder=2;rig.add(gl);
+  gm=M(new THREE.CylinderGeometry(r*.998,r*.998,1,48),mGas);gm.renderOrder=1;rig.add(gm);
+
+  const q=[r*1.4,0,0,r*1.4,L,0];
+  for(let i=0;i<=L;i++){const l=i%5?.35:.8;q.push(r*1.4,i,0,r*1.4-l,i,0)}
+  rig.add(new THREE.LineSegments(new THREE.BufferGeometry().setAttribute('position',new THREE.Float32BufferAttribute(q,3)),new THREE.LineBasicMaterial({color:0x8aa0b5})));
+
+  pg=new THREE.Group();
+  pg.add(M(new THREE.CylinderGeometry(r*.985,r*.985,1.2,56),mSteel,.6),ring(.25,r*.985,.1,mRub),ring(.95,r*.985,.1,mRub));
+  for(let i=0;i<W.length;i++)pg.add(M(new THREE.CylinderGeometry(r*.9,r*.9,.5,44),mW,1.47+i*.54));
+  const top=1.2+W.length*.54;
+  pg.add(M(new THREE.CylinderGeometry(.22,.22,3,16),mSteel,top+1.5),M(new THREE.SphereGeometry(.6,24,16),mSteel,top+3.3));
+  rig.add(pg);
+
+  const geo=new THREE.BufferGeometry();
+  pa=new THREE.BufferAttribute(new Float32Array(NP*3),3);
+  pv=new Float32Array(NP*3);
+  const topY=Math.max(.1,h*100-.6);
+  for(let i=0;i<NP;i++){
+    const a=Math.random()*6.283,rr=Math.sqrt(Math.random())*r*.9;
+    pa.array[i*3]=Math.cos(a)*rr;
+    pa.array[i*3+1]=.3+Math.random()*topY;
+    pa.array[i*3+2]=Math.sin(a)*rr;
+    for(let k=0;k<3;k++)pv[i*3+k]=(Math.random()+Math.random()+Math.random()-1.5)*1.6;
+  }
+  geo.setAttribute('position',pa);
+  const pts=new THREE.Points(geo,mPt);pts.frustumCulled=false;pts.renderOrder=3;rig.add(pts);
+}
+
+/* ───── Physics simulation ───── */
+function Pg(x,t){
+  const V=S.A*x, d=V-S.n*S.b;
+  if(d<=1e-12)return 1e9;
+  const p=S.n*R*t/d-S.a*S.n*S.n/(V*V);
+  return Number.isFinite(p)?p:1e9;
+}
+
+function heq(){
+  const lo=S.hmin, hi=S.hmax, A=S.A, M=S.M, Pe=S.Pe;
+  const f=x=>(Pg(x,S.Tb)-Pe)*A-M*G;
+  if(f(lo)<0){eqH=lo;eqMsg='Resting on bottom stop';return}
+  if(f(hi)>0){eqH=hi;eqMsg='Pushed to top stop';return}
+  let a=lo, b=hi;
+  for(let i=0;i<40;i++){const m=(a+b)*.5;if(f(m)>0)a=m;else b=m}
+  eqH=(a+b)*.5;eqMsg='';
+}
+
+function sim(total){
+  let t=total, it=0;
+  const A=S.A, M=S.M, Pe=S.Pe, nb=S.n*S.b, aS=S.a*S.n*S.n, nR=S.n*R;
+  const z2=2*S.z, tau=S.tau, cv=S.cv, Tb=S.Tb, hmin=S.hmin, hmax=S.hmax;
+  const fastIso=tau<1e-3;
+
+  while(t>1e-9 && it++<900){
+    const h0=h;
+    const k=nR*Math.max(T,1)/(h0*h0);
+    let dt=2e-4;
+    if(t<dt)dt=t;
+    const dtw=Math.max(5e-5,.15/Math.sqrt(Math.max(2*k/M, 1e-4)));
+    if(dtw<dt)dt=dtw;
+
+    const V=A*h0, d=V-nb;
+    const P=d<=1e-12?1e9:(nR*T/d-aS/(V*V));
+    v+=(((P-Pe)*A-M*G-z2*Math.sqrt(Math.max(k*M,0))*v)/M)*dt;
+    if(v>35)v=35;else if(v<-35)v=-35;
+
+    h=h0+v*dt;
+    if(h<hmin){h=hmin;if(v<0)v=0;}
+    else if(h>hmax){h=hmax;if(v>0)v=0;}
+
+    if(fastIso){
+      T=Tb;
+    }else{
+      const denom=cv*(A*h0-nb);
+      if(denom>1e-12){
+        T-=T*A*(h-h0)/denom;
+      }
+      T+=(Tb-T)*(1-Math.exp(-dt/tau));
+      T=cl(T, 5, 6000);
+    }
+    t-=dt;
+  }
+}
+
+function parts(dt){
+  if(!pa || !pv || !S.r) return;
+  const sp=16*Math.sqrt(Math.max(T,10)/300*.029/Math.max(S.gm,1e-4));
+  const r=S.r*.97, top=Math.max(.3,h*100-.2), p=pa.array;
+  for(let i=0;i<NP;i++){
+    const j=i*3;
+    p[j]+=pv[j]*sp*dt;
+    p[j+1]+=pv[j+1]*sp*dt;
+    p[j+2]+=pv[j+2]*sp*dt;
+    const x=p[j], z=p[j+2];
+    const rr=Math.sqrt(x*x+z*z);
+    if(rr>r){
+      const nx=x/rr, nz=z/rr, d=pv[j]*nx+pv[j+2]*nz;
+      if(d>0){pv[j]-=2*d*nx;pv[j+2]-=2*d*nz}
+      p[j]=nx*r;p[j+2]=nz*r;
+    }
+    if(p[j+1]<.2){p[j+1]=.2;pv[j+1]=Math.abs(pv[j+1])}
+    else if(p[j+1]>top){p[j+1]=top;pv[j+1]=-Math.abs(pv[j+1])}
+  }
+  pa.needsUpdate=true;
+}
+
+/* ───── Readouts ───── */
+const RO=[['rP','Gas pressure'],['rV','Volume'],['rT','Gas temperature'],['rh','Gas column height'],['rF','Net force'],['re','Rest position (Eq)'],['rZ','Compressibility Z'],['rv','Piston velocity']];
+$('ro').innerHTML=RO.map(([i,l])=>`<div class="card"><small>${l}</small><b id="${i}">${i==='rP'?'<span id="rPv">–</span><i id="rPi"></i>':'–'}</b></div>`).join('');
+const EL={};
+RO.forEach(([i])=>EL[i]=$(i));
+EL.rPv=$('rPv');EL.rPi=$('rPi');EL.chip=$('chip');EL.wl=$('wl');
+const lastTxt={};
+const setB=(k,val)=>{if(lastTxt[k]!==val){lastTxt[k]=val;EL[k].textContent=val}};
+
+/* ───── P–V Diagram Chart ───── */
+const ch=$('ch'), cx=ch.getContext('2d');
+const cdpr=Math.min(window.devicePixelRatio||1,2);
+const CH_H=180;
+let cW=0, cH=CH_H;
+const Lm=44, Rm=10, Tm=14, Bm=28;
+let cxm=1, cym=1;
+const cX=v=>Lm+v/cxm*(cW-Lm-Rm);
+const cY=p=>Tm+(1-Math.min(p,cym*1.04)/cym)*(cH-Tm-Bm);
+
+const COL={ln:'#d3dce6',mut:'#5d6f82',ac:'#0a7ea4',ok:'#0b8f63'};
+function readColors(){
+  const cs=getComputedStyle(document.documentElement);
+  const g=k=>cs.getPropertyValue(k).trim()||COL[k];
+  COL.ln=g('--ln');COL.mut=g('--mut');COL.ac=g('--ac');COL.ok=g('--ok');
+}
+
+const isoV=new Float32Array(ISO_N), isoP=new Float32Array(ISO_N);
+let isoKey='';
+function ensureIso(){
+  const k=S.A+'|'+S.L+'|'+S.Tb+'|'+S.n+'|'+S.a+'|'+S.b+'|'+S.hmin;
+  if(k===isoKey)return;
+  isoKey=k;
+  const v0=Math.max(S.hmin*S.A*1e6,0);
+  const xm=Math.max(S.A*S.L*1e6,1e-9);
+  const span=Math.max(xm-v0,1e-9);
+  for(let i=0;i<ISO_N;i++){
+    const vv=v0+span*i/(ISO_N-1);
+    isoV[i]=vv;
+    isoP[i]=Pg(vv/1e6/S.A,S.Tb)/1e3;
+  }
+}
+
+function sizeChart(){
+  const w=Math.max(ch.clientWidth||300,50);
+  const pxW=Math.max(1,Math.round(w*cdpr));
+  const pxH=Math.round(CH_H*cdpr);
+  if(ch.width!==pxW||ch.height!==pxH){ch.width=pxW;ch.height=pxH}
+  cW=w;cH=CH_H;
+}
+
+function chart(P,V){
+  if(cW<10)return;
+  ensureIso();
+  const g=cx;
+  g.setTransform(cdpr,0,0,cdpr,0,0);
+  g.clearRect(0,0,cW,cH);
+  cxm=Math.max(S.A*S.L*1e6,1e-9);
+  cym=Math.max(3*S.Pload, P*1.2, 1000)/1e3;
+  const x0=Lm, x1=cW-Rm, y0=Tm, y1=cH-Bm;
+
+  g.font='10px "IBM Plex Mono",monospace';
+  g.lineWidth=1;g.strokeStyle=COL.ln;g.fillStyle=COL.mut;
+  for(let i=0;i<=4;i++){
+    const x=x0+(x1-x0)*i/4, y=y0+(y1-y0)*i/4;
+    g.beginPath();g.moveTo(x,y0);g.lineTo(x,y1);g.moveTo(x0,y);g.lineTo(x1,y);g.stroke();
+    g.textAlign='center';g.fillText((cxm*i/4).toFixed(cxm<10?1:0),x,y1+12);
+    g.textAlign='right';g.fillText((cym*(4-i)/4).toFixed(cym<10?1:0),x0-4,y+3);
+  }
+  g.textAlign='center';g.fillText('V (mL)',(x0+x1)/2,cH-3);
+  g.textAlign='left';g.fillText('P (kPa)',4,10);
+
+  /* Load line */
+  g.strokeStyle=COL.ok;g.setLineDash([5,4]);
+  const yl=cY(S.Pload/1e3);
+  g.beginPath();g.moveTo(x0,yl);g.lineTo(x1,yl);g.stroke();
+  g.setLineDash([]);
+
+  /* Isotherm */
+  g.strokeStyle=COL.ac;g.lineWidth=1.6;g.beginPath();
+  let started=false;
+  for(let i=0;i<ISO_N;i++){
+    const p=isoP[i];
+    if(p>cym*1.15 && !started) continue;
+    const x=cX(isoV[i]), y=cY(p);
+    if(!started){g.moveTo(x,y);started=true;}else g.lineTo(x,y);
+  }
+  g.stroke();
+
+  /* Trail */
+  if(trailN>1){
+    g.strokeStyle=COL.mut;g.lineWidth=1;g.beginPath();
+    for(let i=0;i<trailN;i++){
+      const k=(trailI-trailN+i+TRAIL_MAX)%TRAIL_MAX;
+      const x=cX(trailX[k]), y=cY(trailY[k]);
+      if(i)g.lineTo(x,y);else g.moveTo(x,y);
+    }
+    g.stroke();
+  }
+  /* Current point */
+  g.fillStyle=COL.ac;
+  g.beginPath();g.arc(cX(V*1e6),cY(P/1e3),4.5,0,6.2832);g.fill();
+}
+
+/* ───── Configuration Reader ───── */
+function read(){
+  const A=Math.max(si('A',1e-3),1e-6);
+  const L=Math.max(si('L',.15),.03);
+  const g=GAS[gasKey]||GAS.air;
+  const real=$('model').value==='vdw';
+  const z=cl(parseFloat($('zeta').value)||.03,0,1);
+  const ts=parseFloat($('ts').value)||.1;
+  const proc=$('proc').value;
+
+  const newS={
+    Tb:Math.max(si('T',310.15),5),
+    n:Math.max(si('n',1e-3),1e-7),
+    A,L,
+    Pe:Math.max(si('P',101325),0),
+    a:real?g.a:0,
+    b:real?g.b:0,
+    cv:g.cv, gm:g.M,
+    tau:PROC_TAU[proc]!==undefined?PROC_TAU[proc]:PROC_TAU.iso,
+    z, ts,
+    M:Math.max(si('m',.2)+W.reduce((s,x)=>s+x,0)/1000,.001)
+  };
+
+  /* Crucial: preserve cylinder radius directly inside S so changing gas never leaves S.r undefined! */
+  newS.r=Math.sqrt(newS.A/Math.PI)*100;
+  newS.hmin=Math.max(.003,1.05*newS.n*newS.b/newS.A);
+  newS.hmax=Math.max(newS.hmin+.005,L-.014);
+  newS.Pload=newS.Pe+newS.M*G/newS.A;
+  S=newS;
+
+  const hPrev=h;
+  h=cl(h,S.hmin,S.hmax);
+  if(h!==hPrev)v=0;
+
+  const key=A+'|'+L+'|'+W.length;
+  if(rigKey!==key){
+    build();
+    trailN=0;trailI=0;
+  }
+  lastTxt.chip=null;
+  EL.wl.textContent=W.length?W.reduce((s,x)=>s+x,0)+' g ('+W.length+')':'none';
+  heq();
+  updateGasCard();
+}
+
+function reset(ratio){
+  heq();
+  h=cl(eqH*ratio,S.hmin,S.hmax);
+  v=0;T=S.Tb;trailN=0;trailI=0;
+}
+
+function preset(i){
+  const p=PRE[i][1];
+  for(const k of['T','n','A','L','m','P']){
+    $(k+'U').value=0;prev[k]=0;$(k).value=p[k];
+  }
+  W=p.w.slice();
+  setGasDirect(p.gas);
+  $('proc').value=p.proc;
+  $('zeta').value=p.z;
+  $('model').value='vdw';
+  read();
+  reset(p.h0);
+}
+
+/* ───── Main Animation Loop ───── */
+let lastT=0, lastRO=0;
+let avgAcc=0, avgN=0, lastAdapt=0;
+
+function adapt(raw,now){
+  if(raw>0&&raw<200){avgAcc+=raw;avgN++;}
+  if(avgN>=45&&now-lastAdapt>2000){
+    const a=avgAcc/avgN;
+    if(a>26&&curDpr>0.75){curDpr=Math.max(0.75,curDpr-0.25);ren.setPixelRatio(curDpr);}
+    else if(a<12.5&&curDpr<dprCap){curDpr=Math.min(dprCap,curDpr+0.25);ren.setPixelRatio(curDpr);}
+    avgAcc=0;avgN=0;lastAdapt=now;
+  }
+}
+
+function frame(){
+  const cw=Math.max(cv.clientWidth,1);
+  const chh=Math.max(cv.clientHeight,1);
+  const asp=cw/chh;
+  const L=S.L*100;
+  const need=Math.max(L+11,(S.r||10)*3.4/Math.max(asp,.01));
+  camD=need*1.95*zoom;
+  camY=L/2+1.4;
+}
+
+function loop(now){
+  requestAnimationFrame(loop);
+  const raw=now-lastT;lastT=now;
+  const wd=Math.min((raw>0?raw:16.7)/1000,.05);
+  adapt(raw,now);
+
+  if(held){
+    /* 1:1 direct tracking while dragging */
+    const prevH=h;
+    h=hT;
+    v=wd>0?(h-prevH)/wd:0;
+    if(S.tau<1e-3){
+      T=S.Tb;
+    }else{
+      const ratio=(S.A*prevH-S.n*S.b)/Math.max(S.A*h-S.n*S.b, 1e-9);
+      if(ratio>0) T*=Math.pow(ratio, 1/S.cv);
+      T+=(S.Tb-T)*(1-Math.exp(-wd/S.tau));
+      T=cl(T,5,6000);
+    }
+  }else{
+    sim(wd*S.ts);
+  }
+
+  parts(wd);
+  az+=(taz-az)*.15;
+  el+=(tel-el)*.15;
+  frame();
+  tg.set(0,camY,0);
+  cam.position.set(
+    Math.sin(el)*Math.sin(az)*camD,
+    camY+Math.cos(el)*camD,
+    Math.sin(el)*Math.cos(az)*camD
+  );
+  cam.lookAt(tg);
+
+  pg.position.y=h*100;
+  const gasH=Math.max(h*100,.01);
+  gm.scale.y=gasH;
+  gm.position.y=h*50;
+  mGas.color.setHSL(.58-.58*cl((T-250)/300,0,1),.9,.55);
+
+  const P=Pg(h,T), V=S.A*h;
+
+  /* Chart trail */
+  const Vm=V*1e6, Pk=P/1e3;
+  if(trailN===0){
+    trailX[0]=Vm;trailY[0]=Pk;trailI=1;trailN=1;
+  }else{
+    const k=(trailI-1+TRAIL_MAX)%TRAIL_MAX;
+    const dx=(Vm-trailX[k])/cxm, dy=(Pk-trailY[k])/cym;
+    if(dx*dx+dy*dy>1e-5){
+      trailX[trailI]=Vm;trailY[trailI]=Pk;
+      trailI=(trailI+1)%TRAIL_MAX;
+      if(trailN<TRAIL_MAX)trailN++;
+    }
+  }
+  chart(P,V);
+
+  /* Throttled readouts */
+  if(now-lastRO>66){
+    lastRO=now;
+    setB('rPv',(P/1e3).toFixed(2)+' kPa');
+    setB('rPi',(P/133.322).toFixed(0)+' mmHg');
+    setB('rV',(V*1e6).toFixed(2)+' mL');
+    setB('rT',(T-273.15).toFixed(1)+' °C');
+    setB('rh',(h*100).toFixed(2)+' cm');
+    const F=(P-S.Pe)*S.A-S.M*G;
+    setB('rF',(F>=0?'+':'')+F.toFixed(3)+' N');
+    setB('re',(eqH*100).toFixed(2)+' cm');
+    setB('rZ',(P*V/(S.n*R*T)).toFixed(4));
+    setB('rv',(v*1000).toFixed(1)+' mm/s');
+    setB('chip',held?'Manual hand hold':(Math.abs(v)>.003?(v<0?'Compressing':'Expanding'):(eqMsg||'In equilibrium')));
+  }
+  ren.render(scene,cam);
+}
+
+/* ───── Interaction ───── */
+const setRay=e=>{
+  const b=cv.getBoundingClientRect();
+  rc.setFromCamera(new THREE.Vector2(
+    (e.clientX-b.left)/b.width*2-1,
+    -((e.clientY-b.top)/b.height*2-1)
+  ),cam);
+};
+
+function axisY(){
+  const o=rc.ray.origin, d=rc.ray.direction, den=1-d.y*d.y;
+  if(den<1e-3)return null;
+  return (o.y-d.y*(o.x*d.x+o.y*d.y+o.z*d.z))/den;
+}
+
+let orb=false, lx=0, ly=0;
+cv.addEventListener('pointerdown',e=>{
+  e.preventDefault();
+  cv.setPointerCapture(e.pointerId);
+  lx=e.clientX;ly=e.clientY;
+  setRay(e);
+  if(pg&&rc.intersectObject(pg,true).length){
+    const y=axisY();
+    if(y!=null){
+      held=true;grab=y-h*100;hT=h;
+      cv.style.cursor='ns-resize';
+      return;
+    }
+  }
+  orb=true;cv.style.cursor='grabbing';
+});
+
+cv.addEventListener('pointermove',e=>{
+  if(held){
+    setRay(e);
+    const y=axisY();
+    if(y!=null)hT=cl((y-grab)/100,S.hmin,S.hmax);
+  }else if(orb){
+    taz=az-=(e.clientX-lx)*.008;
+    tel=el=cl(el-(e.clientY-ly)*.008,.08,1.65);
+    lx=e.clientX;ly=e.clientY;
+  }
+});
+
+const up=()=>{held=false;orb=false;cv.style.cursor='grab';};
+cv.addEventListener('pointerup',up);
+cv.addEventListener('pointercancel',up);
+cv.addEventListener('wheel',e=>{e.preventDefault();zoom=cl(zoom*Math.exp(e.deltaY*.001),.5,2.2)},{passive:false});
+
+document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('[data-v]').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');
+  const v={side:[0,1.5708],iso:[.7,1.22],top:[0,.1]}[b.dataset.v];
+  taz=v[0];tel=v[1];
+});
+
+document.querySelectorAll('[data-w]').forEach(b=>b.onclick=()=>{
+  const x=+b.dataset.w;
+  if(!x)W.pop();
+  else if(W.length<8)W.push(x);
+  read();
+});
+
+const panel=document.querySelector('.panel');
+['input','change'].forEach(ev=>{
+  panel.addEventListener(ev,e=>{
+    const t=e.target;
+    if(/^[TnALmP]U$/.test(t.id)){
+      const k=t.id[0], u=U[k][+t.value], o=U[k][prev[k]];
+      const cur=parseFloat($(k).value);
+      if(Number.isFinite(cur)){
+        const s=cur*o[1]+(o[2]||0);
+        $(k).value=+((s-(u[2]||0))/u[1]).toPrecision(5);
+      }
+      prev[k]=+t.value;
+    }
+    if(t.id!=='pre')read();
+  });
+});
+
+$('pre').onchange=()=>preset(+$('pre').value);$('rst').onclick=()=>reset(1.5);
+
+/* ───── Sizing & Boot ───── */
+const fit=()=>{
+  const b=$('stage').getBoundingClientRect();
+  if(b.width<1||b.height<1)return;
+  ren.setSize(b.width,b.height,false);
+  cam.aspect=b.width/b.height;
+  cam.updateProjectionMatrix();
+  sizeChart();
+};
+
+if(window.ResizeObserver)new ResizeObserver(fit).observe($('stage'));
+addEventListener('resize',fit,{passive:true});
+if(window.matchMedia){
+  const mq=matchMedia('(prefers-color-scheme: dark)');
+  const onTheme=()=>readColors();
+  if(mq.addEventListener)mq.addEventListener('change',onTheme);
+  else if(mq.addListener)mq.addListener(onTheme);
+}
+
+readColors();
+fit();
+preset(0);
+fit();
+lastT=performance.now();
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
